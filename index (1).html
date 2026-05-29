@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gastos Familia</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0e0f13">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gastos Familia">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+
+<header class="header">
+  <div class="header-top">
+    <span class="app-title">💰 Gastos Familia</span>
+    <div class="hdr-actions">
+      <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Cambiar tema">☀️</button>
+      <button class="icon-btn" onclick="toggleHide()">👁</button>
+      <button class="icon-btn" onclick="openAccounts()">📝</button>
+    </div>
+  </div>
+  <div class="bal-section">
+    <div class="bal-label">Balance del mes</div>
+    <div class="bal-amount pos" id="saldoTotal">0,00 €</div>
+    <div class="bal-meta">
+      <span class="bal-meta-item"><span class="dot-g"></span><span id="totalIng">0,00 €</span></span>
+      <span class="bal-meta-item"><span class="dot-r"></span><span id="totalGas">0,00 €</span></span>
+    </div>
+  </div>
+</header>
+
+
+<div class="alert-cards" id="alertCards"></div>
+<div id="saldoBajoAlert"></div>
+<div class="alerts-bar" id="alertsBar" style="display:none;"></div>
+
+<div class="month-nav">
+  <button class="mth-btn" onclick="changeMonth(-1)">&#8249;</button>
+  <span class="mth-label" id="monthLabel">—</span>
+  <button class="mth-btn" onclick="changeMonth(1)">&#8250;</button>
+</div>
+
+<div class="main">
+
+  <!-- PÁGINA: REGISTRO -->
+  <div class="page active" id="pageReg">
+    <div class="sec-title">
+      <span>Cuentas</span>
+      <span id="filtroLabel" style="color:var(--blue);font-size:10px;cursor:pointer;" onclick="clearFiltro()"></span>
+    </div>
+    <div class="acc-row" id="accRow"></div>
+
+    <div class="sec-title">Acciones rápidas</div>
+    <div class="quick-section">
+      <div class="quick-grid" id="quickGrid"></div>
+    </div>
+
+    <div class="inp-panel" id="inpPanel">
+      <div class="ph">
+        <button onclick="closePanel()" style="background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:0 8px 0 0;display:flex;align-items:center;gap:8px;margin-bottom:12px;font-family:Syne,sans-serif;font-size:16px;font-weight:600;">← Volver</button>
+        <div class="pt">
+          <span id="panIcon"></span>
+          <span id="panName"></span>
+          <span class="tbadge gasto" id="panBadge">GASTO</span>
+        </div>
+        <button class="cls-btn" onclick="closePanel()">&#10005;</button>
+      </div>
+      <input class="amt-inp" type="text" id="importe" placeholder="0,00" inputmode="numeric" autocomplete="off">
+      <div class="frow">
+        <div class="fg"><div class="fl">Categoría *</div><select id="catGenSel" onchange="onCatGenChange()"></select></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">Subcategoría *</div><select id="subcat"></select></div>
+        <div class="fg"><div class="fl">Cuenta</div><select id="cuentaSel"></select></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">Fecha *</div><input type="date" id="fechaInp"></div>
+        <div class="fg"><div class="fl">Pagador</div>
+          <select id="pagadorSel" data-pagador="true" required>
+            <option value="">— Obligatorio —</option>
+            <option value="pag1" class="opt-pag1">Pagador 1</option>
+            <option value="pag2" class="opt-pag2">Pagador 2</option>
+            <option value="Compartido">Compartido</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">Descripción (opcional)</div><input type="text" id="descInp" placeholder="Nota..."></div>
+      </div>
+      <button class="add-btn gasto" id="addBtn" onclick="addMov()">&#8722; Registrar gasto</button>
+    </div>
+
+    <div class="tr-panel" id="trPanel">
+      <div class="ph">
+        <div class="pt">&#128257; Transferencia</div>
+        <button class="cls-btn" onclick="closeTr()">&#10005;</button>
+      </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">Importe</div><input class="amt-inp" type="number" id="trImp" placeholder="0,00" step="0.01" inputmode="decimal" style="font-size:16px;padding:10px;margin:0;"></div>
+        <div class="fg"><div class="fl">Fecha</div><input type="date" id="trFecha"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">Desde</div><select id="trFrom"></select></div>
+        <div class="fg"><div class="fl">Hacia</div><select id="trTo"></select></div>
+      </div>
+      <button class="add-btn tr-btn" onclick="addTr()">&#128257; Transferir</button>
+    </div>
+
+    <div class="sec-title" style="margin-top:4px;">
+      <span>Movimientos</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="movCount" style="color:var(--muted);font-size:10px;"></span>
+        <button class="sbtn" id="filtroToggleBtn" onclick="toggleFiltroPanel()" style="font-size:11px;padding:5px 10px;">🔍 Filtrar</button>
+      </div>
+    </div>
+    <!-- ORDENAR -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none;">
+      <button class="sbtn" id="sort_fecha" onclick="setSort('fecha')" style="font-size:11px;padding:5px 10px;white-space:nowrap;flex-shrink:0;background:var(--blue);color:white;">📅 Fecha ↓</button>
+      <button class="sbtn" id="sort_cat"   onclick="setSort('cat')"   style="font-size:11px;padding:5px 10px;white-space:nowrap;flex-shrink:0;">🏷️ Cat.</button>
+      <button class="sbtn" id="sort_sub"   onclick="setSort('sub')"   style="font-size:11px;padding:5px 10px;white-space:nowrap;flex-shrink:0;">📋 Subcat.</button>
+    </div>
+
+    <!-- PANEL FILTROS -->
+    <div id="filtroPanel" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:14px;margin-bottom:14px;animation:slideUp .2s ease;">
+      <div class="frow">
+        <div class="fg">
+          <div class="fl">Tipo</div>
+          <select id="fTipo" onchange="applyFiltros()">
+            <option value="">Todos</option>
+            <option value="gasto">Gastos</option>
+            <option value="ingreso">Ingresos</option>
+            <option value="transferencia">Transferencias</option>
+          </select>
+        </div>
+        <div class="fg">
+          <div class="fl">Pagador</div>
+          <select id="fPagador" data-pagador="true" onchange="applyFiltros()">
+            <option value="">Todos</option>
+            <option value="pag1" class="opt-pag1">Pagador 1</option>
+            <option value="pag2" class="opt-pag2">Pagador 2</option>
+            <option value="Compartido">Compartido</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <div class="fl">Categoría</div>
+          <select id="fCat" onchange="onFiltrosCatChange()">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="fg">
+          <div class="fl">Subcategoría</div>
+          <select id="fSubcat" onchange="applyFiltros()">
+            <option value="">Todas</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <div class="fl">Desde</div>
+          <input type="date" id="fDesde" onchange="applyFiltros()">
+        </div>
+        <div class="fg">
+          <div class="fl">Hasta</div>
+          <input type="date" id="fHasta" onchange="applyFiltros()">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">Buscar texto</div>
+          <input type="text" id="fTexto" placeholder="Descripción, subcategoría..." oninput="applyFiltros()" style="font-size:13px;">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="sbtn" onclick="resetFiltros()" style="flex:1;font-size:12px;">✕ Limpiar</button>
+        <button class="sbtn pri" onclick="toggleFiltroPanel()" style="flex:1;font-size:12px;">✓ Cerrar</button>
+      </div>
+    </div>
+
+    <div id="movList"></div>
+  </div>
+
+  <!-- PÁGINA: RECIBOS -->
+  <div class="page" id="pageRecibos">
+    <div class="sec-title">
+      <span>Recibos</span>
+      <button class="sbtn pri" onclick="openAddRecibo()" style="font-size:11px;padding:6px 12px;">+ Nuevo</button>
+    </div>
+    <div class="tab-row" id="recibosTabRow">
+      <button class="tab-btn active" id="rTab_todos" onclick="showRecibosFiltro('todos')">Todos</button>
+      <button class="tab-btn" id="rTab_proximos" onclick="showRecibosFiltro('proximos')">🔔 Próximos</button>
+      <button class="tab-btn" id="rTab_pendientes" onclick="showRecibosFiltro('pendientes')">📋 Pendientes</button>
+    </div>
+    <div id="recibosList"></div>
+  </div>
+
+  <!-- PÁGINA: INFORMES -->
+  <div class="page" id="pageStats">
+    <div class="tab-row">
+      <button class="tab-btn active" id="tabMes" onclick="showTab('mes')">&#128197; Por mes</button>
+      <button class="tab-btn" id="tabCat" onclick="showTab('cat')">&#127991; Por cat.</button>
+      <button class="tab-btn" id="tabSubcat" onclick="showTab('subcat')">&#128203; Subcategorías</button>
+      <button class="tab-btn" id="tabPag" onclick="showTab('pag')">&#128106; Por pagador</button>
+    </div>
+    <div id="tabMesContent">
+      <div class="sec-title">Resumen del mes</div>
+      <div class="stats-grid" id="statsGrid"></div>
+      <div class="sec-title">Histórico mensual</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;margin-bottom:20px;">
+        <table class="mtable" id="histTable"></table>
+      </div>
+    </div>
+    <div id="tabCatContent" style="display:none;">
+      <div class="sec-title">Gastos por categoría <span id="catMesLbl" style="color:var(--blue);text-transform:none;letter-spacing:0;font-size:11px;font-weight:400;"></span></div>
+      <div id="catStats"></div>
+    </div>
+    <div id="tabAlimContent" style="display:none;">
+  <div style="padding:0 0 12px;"><span id="subcatMesLbl" style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;"></span></div>
+  <div id="subcatContent"></div>
+</div>
+<div id="tabPagContent" style="display:none;">
+      <div class="sec-title">Por pagador <span id="pagMesLbl" style="color:var(--blue);text-transform:none;letter-spacing:0;font-size:11px;font-weight:400;"></span></div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--blue);">&#128100; <span class="lbl-pag1">Pagador 1</span></div>
+        <div class="stats-grid" id="pagPag1Grid" style="margin-bottom:0;"></div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--yellow);">&#128100; <span class="lbl-pag2">Pagador 2</span></div>
+        <div class="stats-grid" id="pagPag2Grid" style="margin-bottom:0;"></div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--green);">&#129309; Compartido</div>
+        <div class="stats-grid" id="pagCompGrid" style="margin-bottom:0;"></div>
+      </div>
+
+      <!-- Diferencia Pag1 vs Pag2 -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text);">&#9878;&#65039; Diferencia <span class="lbl-pag1">Pagador 1</span> vs <span class="lbl-pag2">Pagador 2</span></div>
+        <div id="pagDiferencia"></div>
+      </div>
+
+      <!-- Total familia mes -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text);">&#128106; Total familia — mes</div>
+        <div class="stats-grid" id="pagTotalGrid" style="margin-bottom:8px;"></div>
+        <div id="pagBarras"></div>
+      </div>
+
+      <!-- DIFERENCIA MES Pag1 vs Pag2 -->
+      <div style="background:var(--surface);border:1px solid rgba(255,209,102,.3);border-radius:var(--rsm);padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--yellow);">&#9878;&#65039; Diferencia mes — <span class="lbl-pag1">Pagador 1</span> vs <span class="lbl-pag2">Pagador 2</span></div>
+        <div class="stats-grid" id="pagDifGrid" style="margin-bottom:0;"></div>
+      </div>
+
+      <!-- TOTAL AÑO -->
+      <div style="background:var(--surface);border:1px solid rgba(0,229,160,.2);border-radius:var(--rsm);padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--green);">&#128197; Total año <span id="pagAnioLbl" style="font-size:11px;font-weight:400;color:var(--muted);"></span></div>
+        <div class="stats-grid" id="pagAnioGrid" style="margin-bottom:10px;"></div>
+        <div style="font-size:11px;font-weight:600;color:var(--yellow);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;">Diferencia año — <span class="lbl-pag1">Pagador 1</span> vs <span class="lbl-pag2">Pagador 2</span></div>
+        <div class="stats-grid" id="pagAnioDifGrid" style="margin-bottom:0;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PÁGINA: CONFIG CATEGORÍAS -->
+  <div class="page" id="pageCats">
+    <div class="sec-title">
+      <span>Categorías y subcategorías</span>
+      <div style="display:flex;gap:6px;">
+        <button class="sbtn" onclick="resetCats()" style="font-size:10px;padding:6px 10px;color:var(--muted);">&#8635; Reset</button>
+        <button class="sbtn pri" onclick="addNewCat()" style="font-size:11px;padding:6px 12px;">+ Nueva</button>
+      </div>
+    </div>
+    <div id="catEditorList"></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <button class="nbtn active" id="navReg" onclick="showPage('Reg')">
+    <span class="ni">&#128203;</span>Registro
+  </button>
+  <button class="nbtn" id="navRec" onclick="showPage('Recibos')">
+    <span class="ni">&#128190;</span>Recibos
+  </button>
+  <button class="nbtn" id="navStats" onclick="showPage('Stats')">
+    <span class="ni">&#128202;</span>Informes
+  </button>
+  <button class="nbtn  <button class="nbtn" id="navCats" onclick="showPage('Cats')">
+    <span class="ni">&#127991;&#65039;</span>Categorías
+  </button>
+  <button class="nbtn" id="navDatos" onclick="showPage('Datos')">
+    <span class="ni">&#128190;</span>Datos
+  </button>
+</div>
+
+<!-- MODAL: DETALLE CUENTA -->
+<div class="modal-ov" id="modalDetalleCuenta" onclick="bgClose(event,'modalDetalleCuenta')">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="detalleCuentaTitulo">Cuenta</span>
+      <button class="modal-close" onclick="closeModal('modalDetalleCuenta')">&#10005;</button>
+    </div>
+    <div id="detalleCuentaContent"></div>
+  </div>
+</div>
+
+<!-- MODAL: CUENTAS -->
+<div class="modal-ov" id="modalCuentas" onclick="bgClose(event,'modalCuentas')">
+  <div class="modal">
+    <div class="modal-title">
+      <span>&#128179; Editar cuentas</span>
+      <button class="modal-close" onclick="closeModal('modalCuentas')">&#10005;</button>
+    </div>
+    <div id="cuentasTotalBar" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Total todas las cuentas</span>
+      <span id="cuentasTotalVal" style="font-family:monospace;font-size:18px;font-weight:700;color:var(--green);">0,00 €</span>
+    </div>
+    <div id="cuentasResumenList" style="margin-bottom:16px;"></div>
+    <div id="cuentasEditList"></div>
+    <div class="add-acc-row">
+      <input type="text" id="newEmoji" placeholder="🏦" style="width:52px;text-align:center;padding:10px 6px;flex:none;">
+      <input type="text" id="newCuentaNombre" placeholder="Nombre cuenta" style="flex:1;">
+      <button class="sbtn pri" onclick="addCuenta()">+ Añadir</button>
+    </div>
+    <br>
+    <button class="sbtn suc" style="width:100%;margin-top:8px;" onclick="saveCuentas()">&#128190; Guardar cambios</button>
+  </div>
+</div>
+
+<!-- PÁGINA: DATOS -->
+<div class="page" id="pageDatos">
+  <div class="main">
+    <div class="sec-title" style="margin-bottom:16px;">💾 Mis datos</div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:16px;margin-bottom:14px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:12px;">👤 Nombres de pagadores</div>
+      <div class="frow">
+        <div class="fg">
+          <div class="fl">Pagador 1</div>
+          <input type="text" id="settPag1" placeholder="Ej: Juan">
+        </div>
+        <div class="fg">
+          <div class="fl">Pagador 2</div>
+          <input type="text" id="settPag2" placeholder="Ej: María">
+        </div>
+      </div>
+      <button class="sbtn suc" style="width:100%;font-size:15px;padding:14px;margin-top:4px;" onclick="savePagadores()">💾 Guardar nombres</button>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:16px;margin-bottom:14px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">📤 Exportar</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Descarga todos tus movimientos y recibos como CSV.</div>
+      <button class="sbtn suc" style="width:100%;font-size:15px;padding:14px;" onclick="exportarMovimientosCSV()">⬇️ Exportar movimientos CSV</button>
+      <button class="sbtn" style="width:100%;font-size:15px;padding:14px;margin-top:8px;" onclick="exportarRecibosCSV()">⬇️ Exportar recibos CSV</button>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:16px;margin-bottom:14px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">📥 Importar</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Carga movimientos desde un CSV exportado anteriormente.</div>
+      <input type="file" id="importMovFile" accept=".csv" style="display:none;" onchange="importarMovimientosCSV(this)">
+      <button class="sbtn" style="width:100%;font-size:15px;padding:14px;" onclick="document.getElementById('importMovFile').click()">⬆️ Importar movimientos CSV</button>
+      <input type="file" id="importRecFile" accept=".csv" style="display:none;" onchange="importarRecibosCSV(this)">
+      <button class="sbtn" style="width:100%;font-size:15px;padding:14px;margin-top:8px;" onclick="document.getElementById('importRecFile').click()">⬆️ Importar recibos CSV</button>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid rgba(255,77,109,.3);border-radius:var(--rsm);padding:16px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px;color:var(--red);">⚠️ Zona peligrosa</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Borra todos los datos de la app. No se puede deshacer.</div>
+      <button class="sbtn" style="width:100%;font-size:15px;padding:14px;border-color:var(--red);color:var(--red);" onclick="borrarTodosDatos()">🗑️ Borrar todos los datos</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: RECIBO FORM -->
+<div class="modal-ov" id="modalRecibo" onclick="bgClose(event,'modalRecibo')">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modalReciboTitle">&#128190; Nuevo recibo</span>
+      <button class="modal-close" onclick="closeModal('modalRecibo')">&#10005;</button>
+    </div>
+    <div class="frow">
+      <div class="fg"><div class="fl">Concepto</div><input type="text" id="rConcepto" placeholder="Ej: Netflix"></div>
+      <div class="fg"><div class="fl">Importe €</div><input type="number" id="rImporte" placeholder="0,00" step="0.01"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><div class="fl">Próxima fecha cobro</div><input type="date" id="rFecha"></div>
+      <div class="fg"><div class="fl">Frecuencia</div>
+        <select id="rFrec">
+          <option value="mensual">Mensual</option>
+          <option value="bimestral">Bimestral</option>
+          <option value="trimestral">Trimestral</option>
+          <option value="semestral">Semestral</option>
+          <option value="anual">Anual</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><div class="fl">Cuenta</div><select id="rCuenta"></select></div>
+      <div class="fg"><div class="fl">Pagador</div>
+        <select id="rPagador" data-pagador="true">
+          <option value="pag1" class="opt-pag1">Pagador 1</option>
+          <option value="pag2" class="opt-pag2">Pagador 2</option>
+          <option value="Compartido">Compartido</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><div class="fl">Condición</div>
+        <select id="rCondicion">
+          <option value="">Ninguna</option>
+          <option value="Recibo Pendiente">Recibo Pendiente</option>
+        </select>
+      </div>
+      <div class="fg" style="display:flex;align-items:center;gap:10px;padding-top:22px;">
+        <input type="checkbox" id="rActivo" checked style="width:22px;height:22px;accent-color:var(--green);cursor:pointer;flex-shrink:0;">
+        <span class="fl" style="margin:0;cursor:pointer;" onclick="document.getElementById('rActivo').click()">Recibo activo</span>
+      </div>
+      <div class="fg"><div class="fl">Tipo movimiento</div>
+        <select id="rTipoMov" onchange="onRTipoMovChange()">
+          <option value="gasto">💸 Gasto</option>
+          <option value="ingreso">💰 Ingreso</option>
+          <option value="transferencia">🔁 Traspaso</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><div class="fl">Categoría</div><select id="rCat"></select></div>
+      <div class="fg"><div class="fl">Subcategoría</div><select id="rSubcat"></select></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><div class="fl">Descripción</div><input type="text" id="rDesc" placeholder="Opcional..."></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="add-btn gasto" id="saveReciboBtn" onclick="saveRecibo()" style="margin:0;">&#128190; Guardar recibo</button>
+      <button class="add-btn" id="delReciboBtn" onclick="deleteReciboEdit()" style="margin:0;background:var(--surface2);color:var(--red);border:1px solid var(--red);display:none;">&#128465; Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PAGAR RECIBO -->
+<div class="modal-ov" id="modalPagarRecibo" onclick="bgClose(event,'modalPagarRecibo')">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="pagarReciboTitle">Registrar pago</span>
+      <button class="modal-close" onclick="closeModal('modalPagarRecibo')">&#10005;</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Se creará un movimiento con los datos del recibo y se actualizará la próxima fecha de cobro.</p>
+    <div class="frow">
+      <div class="fg"><div class="fl">Importe real €</div><input type="number" id="prImporte" placeholder="0,00" step="0.01" inputmode="decimal"></div>
+      <div class="fg"><div class="fl">Fecha pago</div><input type="date" id="prFecha"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><div class="fl">Tipo movimiento</div>
+        <select id="prTipoMov">
+          <option value="gasto">💸 Gasto</option>
+          <option value="ingreso">💰 Ingreso</option>
+          <option value="transferencia">🔁 Traspaso</option>
+        </select>
+      </div>
+      <div class="fg" id="prHaciaRow" style="display:none;">
+        <div class="fl">Cuenta destino</div>
+        <select id="prHacia"></select>
+      </div>
+    </div>
+    <button class="add-btn gasto" onclick="confirmarPago()" style="margin-top:6px;">&#10003; Confirmar pago</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MODAL: EDITAR MOVIMIENTO -->
+<div class="modal-ov" id="modalEditMov" onclick="bgClose(event,'modalEditMov')">
+  <div class="modal">
+    <div class="modal-title">
+      <span>&#9998; Editar movimiento</span>
+      <button class="modal-close" onclick="closeModal('modalEditMov')">&#10005;</button>
+    </div>
+    <div class="frow">
+      <div class="fg"><div class="fl">Importe €</div><input type="number" id="emImporte" placeholder="0,00" step="0.01" inputmode="decimal"></div>
+      <div class="fg"><div class="fl">Fecha</div><input type="date" id="emFecha"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><div class="fl">Categoría</div><select id="emCat" onchange="onEmCatChange()"></select></div>
+      <div class="fg"><div class="fl">Subcategoría</div><select id="emSubcat"></select></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><div class="fl">Cuenta</div><select id="emCuenta"></select></div>
+      <div class="fg"><div class="fl">Pagador</div>
+        <select id="emPagador">
+          <option value="">— Elige —</option>
+          <option value="pag1" class="opt-pag1">Pagador 1</option>
+          <option value="pag2" class="opt-pag2">Pagador 2</option>
+          <option value="Compartido">Compartido</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><div class="fl">Descripción</div><input type="text" id="emDesc" placeholder="Nota..."></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="add-btn ingreso" onclick="saveEditMov()" style="margin:0;">&#128190; Guardar cambios</button>
+      <button class="add-btn" onclick="delMovEdit()" style="margin:0;background:var(--surface2);color:var(--red);border:1px solid var(--red);">&#128465; Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
